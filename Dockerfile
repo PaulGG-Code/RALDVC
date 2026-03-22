@@ -1,4 +1,6 @@
-FROM ubuntu:22.04
+# Pin to linux/amd64 so the lab works identically on Linux, Intel Mac, Apple Silicon,
+# and Windows. The vulnerability exercises depend on x86-64 stack/heap layout.
+FROM --platform=linux/amd64 ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -59,4 +61,10 @@ RUN make -C /lab/exercises all 2>&1 || true
 # Add a helpful banner on shell start
 RUN echo 'cat /lab/vulnerabilities/WELCOME.txt 2>/dev/null || true' >> /root/.bashrc
 
+# Entrypoint: tries to disable ASLR at container start, continues gracefully if
+# the host kernel denies the write (Mac/Windows Docker Desktop).
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/bin/bash"]

@@ -3,6 +3,9 @@ version: "3.9"
 services:
   c-vuln-lab:
     build: .
+    # Pin to linux/amd64 so the lab works on Linux, Intel Mac, Apple Silicon,
+    # and Windows — x86-64 is required for the vulnerability exercises.
+    platform: linux/amd64
     container_name: c-vuln-lab
     stdin_open: true
     tty: true
@@ -12,9 +15,10 @@ services:
     # Disable seccomp so ptrace/gdb works
     security_opt:
       - seccomp:unconfined
-    # Disable ASLR for reproducible exploits
-    sysctls:
-      kernel.randomize_va_space: 0
     # Allow ptrace for gdb
     cap_add:
       - SYS_PTRACE
+    # Note: kernel.randomize_va_space is handled at runtime by entrypoint.sh.
+    # The sysctl is intentionally omitted here because Docker Desktop on Mac
+    # and Windows does not allow writing this kernel parameter, which would
+    # cause the container to fail to start on those platforms.
