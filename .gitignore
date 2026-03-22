@@ -1,0 +1,31 @@
+# Compiled exercise binaries
+exercises/exoA/exoA_vuln
+exercises/exoA/exoA_vuln_asan
+exercises/exoA/exoA_fix
+exercises/exoA/exoA_vuln_test
+exercises/exoA/exoA_fix_test
+exercises/exoA/test_padding
+exercises/exoB/exoB_vuln
+exercises/exoB/exoB_vuln_asan
+exercises/exoB/exoB_fix
+exercises/exoC/exoC_vuln
+exercises/exoC/exoC_vuln_asan
+exercises/exoC/exoC_fix
+exercises/exoD/exoD_vuln
+exercises/exoD/exoD_vuln_asan
+exercises/exoD/exoD_vuln_ubsan
+exercises/exoD/exoD_fix
+exercises/exoE/exoE_vuln
+exercises/exoE/exoE_vuln_asan
+exercises/exoE/exoE_fix
+exercises/exoF/exoF_vuln
+exercises/exoF/exoF_fix
+exercises/exoG/exoG_vuln
+exercises/exoG/exoG_vuln_test
+exercises/exoG/exoG_fix
+exercises/exoH/exoH_vuln
+exercises/exoH/exoH_vuln_asan
+exercises/exoH/exoH_fix
+
+# test_padding source generated during audit
+exercises/exoA/test_padding.c
