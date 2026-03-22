@@ -26,7 +26,7 @@ demo: all
 	@echo ""
 	@echo "── Détection Valgrind ──"
 	valgrind --tool=memcheck --error-exitcode=1 ./exoG_vuln 2>&1 | \
-	    grep -E "(Uninitialised|Invalid|ERROR|SUMMARY)" | head -10 || true
+	    grep -iE "(uninitialised|invalid read|ERROR SUMMARY)" | head -10 || true
 
 clean:
 	rm -f exoG_vuln exoG_fix

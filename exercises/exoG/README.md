@@ -56,7 +56,12 @@ Sur certains systèmes/compilateurs, `r.token` affiche toujours 0x00 (le BSS ou 
 ```bash
 valgrind --tool=memcheck ./exoG_vuln
 ```
-Valgrind signale : `Conditional jump or move depends on uninitialised value(s)` ou `Use of uninitialised value of size N`.
+Valgrind signale (noter la casse minuscule dans les messages réels) :
+```
+==PID== Conditional jump or move depends on uninitialised value(s)
+==PID== Use of uninitialised value of size 8
+```
+Ces deux messages pointent vers la lecture du champ `token` non initialisé dans `printf`.
 
 ## Correction
 

@@ -66,12 +66,29 @@ ASan signale `stack-buffer-overflow` et localise précisément la ligne du `strc
 
 ```bash
 gdb -q ./exoA_vuln
-(gdb) break main
+```
+
+```
+# Placer le breakpoint directement sur la ligne strcpy (ligne 44)
+# "break main" s'arrêterait à la toute première ligne de main — il faudrait
+# appuyer sur 'next' de nombreuses fois pour atteindre strcpy.
+# On cible la ligne exacte du strcpy pour être précis.
+(gdb) break exoA_vuln.c:44
 (gdb) run AAAAAAAAAAAAAAAAAAAA
-(gdb) next                        # avancer jusqu'après strcpy
-(gdb) print s.role                # observer la valeur corrompue
-(gdb) print/x s.role              # en hexadécimal : 0x41414141
-(gdb) x/20x &s                    # dump mémoire de la struct
+
+# GDB s'arrête AVANT d'exécuter strcpy
+(gdb) print s.role                # affiche 0  — valeur initiale
+(gdb) next                        # exécute strcpy (overflow se produit ici)
+
+# GDB s'arrête à la ligne suivante, APRÈS le strcpy
+(gdb) print s.role                # affiche 1094795585  — corrompu !
+(gdb) print/x s.role              # affiche 0x41414141  (4 octets 'A')
+
+# Dump octet par octet de la struct entière (user[16] + role[4] = 20 octets)
+(gdb) x/20bx &s                   # 'b' = byte, 'x' = hexadécimal
+#  → user[0..15] : 0x41 0x41 ... 0x41
+#  → role[0..3]  : 0x41 0x41 0x41 0x41  ← les 'A' qui ont débordé
+
 (gdb) quit
 ```
 

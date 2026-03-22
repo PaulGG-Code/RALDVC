@@ -40,13 +40,37 @@ n = 0x20000001 → n * 8 = 0x100000008 → tronqué à 0x00000008 = 8 octets
 Allocation de 8 octets, écriture de 0x20000001 * 8 = 4 Go → débordement massif
 ```
 
-## Observation outillée avec UBSan
+## Pourquoi UBSan ne détecte PAS cet overflow ?
+
+C'est un point important à comprendre :
+
+```
+uint32_t n = 1U << 30;
+uint32_t total = n * 8;   ← overflow DÉFINI en C, pas UB
+```
+
+L'overflow d'entiers **non signés** (`uint32_t`, `unsigned int`, etc.) est un **comportement DÉFINI** par la norme C : le résultat est simplement tronqué modulo 2^32. Ce n'est pas du comportement indéfini (UB).
+
+UBSan ne signale que les comportements **indéfinis**. L'overflow non signé n'en est pas un → UBSan reste silencieux.
+
+> **GCC UBSan ne supporte pas `-fsanitize=unsigned-integer-overflow`** (c'est une option Clang uniquement).
+> Seul l'overflow **signé** (`int`, `long`) est UB et capturé par GCC UBSan.
+
+## Observation outillée avec ASan — conséquence du heap overflow
+
+À la place, on utilise ASan pour détecter la **conséquence** de l'overflow : l'écriture hors du buffer trop petit.
 
 ```bash
-gcc -O0 -g -fsanitize=undefined exoD_vuln.c -o exoD_vuln_ubsan
-./exoD_vuln_ubsan
+gcc -O0 -g -fsanitize=address exoD_vuln.c -o exoD_vuln_asan
+./exoD_vuln_asan
 ```
-UBSan signale `unsigned integer overflow` si l'overflow est détecté (selon la version de GCC et les flags, les overflows uint32_t peuvent ou non être rapportés — les overflows signés sont toujours rapportés par UBSan).
+ASan signale `heap-buffer-overflow` lors du `memset(buf, 'A', 32)` dans un buffer de 0 ou 1 octet — la preuve que l'overflow arithmétique a produit une allocation insuffisante.
+
+```
+ERROR: AddressSanitizer: heap-buffer-overflow on address ...
+WRITE of size 32 at ...
+0x... is located 0 bytes after 1-byte region [...]
+```
 
 ## Correction
 

@@ -2,7 +2,11 @@ CC   = gcc
 BASE = -O0 -g -Wall -Wextra -Wpedantic
 VULN = $(BASE) -w
 FIX  = $(BASE) -fsanitize=undefined
-USAN = $(BASE) -w -fsanitize=undefined
+# ASan (pas UBSan) — montre le heap-buffer-overflow résultant de l'overflow entier
+# Note: GCC UBSan ne supporte pas -fsanitize=unsigned-integer-overflow (option Clang).
+# L'overflow uint32_t est un comportement DÉFINI (wrapping) — UBSan ne le signale pas.
+# On utilise ASan pour montrer la conséquence : l'écriture hors du buffer trop petit.
+ASAN = $(BASE) -w -fsanitize=address
 
 .PHONY: all vuln fix asan demo clean
 
@@ -15,18 +19,18 @@ fix: exoD_fix.c
 	$(CC) $(FIX) $< -o exoD_fix
 
 asan: exoD_vuln.c
-	$(CC) $(USAN) $< -o exoD_vuln_ubsan
+	$(CC) $(ASAN) $< -o exoD_vuln_asan
 
 demo: all
 	@echo ""
-	@echo "── Overflow de taille (vulnérable) ──"
+	@echo "── Étape 1 : observer l'overflow arithmétique ──"
 	./exoD_vuln || true
 	@echo ""
-	@echo "── Détection UBSan ──"
-	./exoD_vuln_ubsan 2>&1 || true
+	@echo "── Étape 2 : ASan détecte le heap-buffer-overflow résultant ──"
+	./exoD_vuln_asan 2>&1 | head -25 || true
 	@echo ""
-	@echo "── Version corrigée ──"
+	@echo "── Étape 3 : version corrigée (__builtin_mul_overflow) ──"
 	./exoD_fix 2>&1 || true
 
 clean:
-	rm -f exoD_vuln exoD_fix exoD_vuln_ubsan
+	rm -f exoD_vuln exoD_fix exoD_vuln_asan

@@ -30,20 +30,35 @@ gcc -O0 -g -Wall -Wextra -Wpedantic exoE_vuln.c -o exoE_vuln
 ```
 La valeur affichée pour `*p` après `free` peut varier ou rester stable selon les exécutions.
 
-**Étape 2 — Observer ce que glibc écrit dans le bloc libéré :**
+**Étape 2 — Observer ce que glibc écrit dans le bloc libéré avec GDB :**
 ```bash
 gdb -q ./exoE_vuln
-(gdb) break main
+```
+
+```
+# On cible directement la ligne du free() (ligne 23 dans exoE_vuln.c)
+# pour s'arrêter juste avant et juste après.
+(gdb) break exoE_vuln.c:23
 (gdb) run
-(gdb) next          # avancer jusqu'après malloc
-(gdb) print p
-(gdb) print *p      # doit valoir 42
-(gdb) next          # *p = 42
-(gdb) next          # free(p)
-(gdb) print *p      # valeur après free — métadonnées tcache
-(gdb) x/2gx p       # afficher 2 quadwords depuis p
+
+# GDB s'arrête AVANT free(p)
+(gdb) print *p               # affiche 42  — valeur initiale correcte
+(gdb) x/2gx p                # dump 2 mots de 64 bits : [ 0x2a | ... ]
+                              #   0x2a = 42 en hexadécimal
+
+(gdb) next                   # exécute free(p)
+
+# GDB s'arrête APRÈS free(p)
+(gdb) print *p               # valeur différente ! glibc a écrit ses métadonnées
+                              # tcache dans les premiers octets du bloc libéré
+(gdb) x/2gx p                # visualiser les 16 octets bruts — plus 0x2a (42)
+                              # mais un pointeur de la freelist glibc tcache
+
 (gdb) quit
 ```
+
+> **Note :** `break main` puis plusieurs `next` aurait fonctionné mais de manière
+> fastidieuse. Cibler `break exoE_vuln.c:23` est précis et reproductible.
 
 **Étape 3 — Visualiser le recyclage mémoire :**
 ```c
