@@ -1,0 +1,27 @@
+
+  ╔═══════════════════════════════════════════════════════╗
+  ║         C Vulnerability Learning Lab                  ║
+  ╠═══════════════════════════════════════════════════════╣
+  ║  ASLR is DISABLED in this container (randomize=0)     ║
+  ║  All tools: gcc gdb python3 pwntools valgrind         ║
+  ╚═══════════════════════════════════════════════════════╝
+
+  Modules:
+    01  Stack Buffer Overflow    (CWE-121)
+    02  Heap Buffer Overflow     (CWE-122)
+    03  Format String            (CWE-134)
+    04  Integer Overflow         (CWE-190)
+    05  Use-After-Free           (CWE-416)
+    06  Double Free              (CWE-415)
+    07  Null Pointer Deref       (CWE-476)
+    08  Off-by-One               (CWE-193)
+    09  Command Injection        (CWE-78)
+    10  Race Condition TOCTOU    (CWE-367)
+
+  Usage:
+    cd /lab/vulnerabilities/01_stack_buffer_overflow
+    cat README.md
+    make
+    make demo
+    make demo-patched
+

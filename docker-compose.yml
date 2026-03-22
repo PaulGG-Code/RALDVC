@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  c-vuln-lab:
+    build: .
+    container_name: c-vuln-lab
+    stdin_open: true
+    tty: true
+    # Mount vulnerabilities directory so edits on host are reflected in container
+    volumes:
+      - ./vulnerabilities:/lab/vulnerabilities
+    # Disable seccomp so ptrace/gdb works
+    security_opt:
+      - seccomp:unconfined
+    # Disable ASLR for reproducible exploits
+    sysctls:
+      kernel.randomize_va_space: 0
+    # Allow ptrace for gdb
+    cap_add:
+      - SYS_PTRACE
