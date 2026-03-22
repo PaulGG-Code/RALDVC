@@ -19,10 +19,23 @@ RUN apt-get update && apt-get install -y \
     file \
     vim \
     nano \
+    git \
+    python3-dev \
+    libc6-dbg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pwntools
 RUN pip3 install pwntools
+
+# Install pwndbg for enhanced GDB heap/stack visualization
+# Adds: heap, vis_heap_chunks, telescope, context commands in GDB
+RUN git clone --depth=1 https://github.com/pwndbg/pwndbg /opt/pwndbg \
+    && cd /opt/pwndbg && ./setup.sh --quiet 2>&1 | tail -5
+
+# GDB config: Intel syntax, no pagination, pretty printing
+RUN echo 'set disassembly-flavor intel' >> /root/.gdbinit && \
+    echo 'set pagination off'           >> /root/.gdbinit && \
+    echo 'set print pretty on'          >> /root/.gdbinit
 
 # Create lab directory
 WORKDIR /lab
