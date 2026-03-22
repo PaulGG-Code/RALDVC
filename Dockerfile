@@ -40,17 +40,21 @@ RUN echo 'set disassembly-flavor intel' >> /root/.gdbinit && \
 # Create lab directory
 WORKDIR /lab
 
-# Copy vulnerabilities into the image
+# Copy vulnerabilities and exercises into the image
 COPY vulnerabilities/ /lab/vulnerabilities/
+COPY exercises/ /lab/exercises/
 
 # Disable ASLR (also set via sysctl in docker-compose, but belt-and-suspenders)
 RUN echo 0 > /proc/sys/kernel/randomize_va_space 2>/dev/null || true
 
-# Build all modules at image build time
+# Build all vulnerability modules at image build time
 RUN for dir in /lab/vulnerabilities/*/; do \
         echo "Building $dir ..."; \
         make -C "$dir" all 2>&1 || true; \
     done
+
+# Build all exercises at image build time
+RUN make -C /lab/exercises all 2>&1 || true
 
 # Add a helpful banner on shell start
 RUN echo 'cat /lab/vulnerabilities/WELCOME.txt 2>/dev/null || true' >> /root/.bashrc
