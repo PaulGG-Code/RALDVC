@@ -3,7 +3,7 @@ BASE = -O0 -g -Wall -Wextra -Wpedantic
 VULN = $(BASE) -w
 FIX  = $(BASE) -Wuninitialized -Wmaybe-uninitialized
 
-.PHONY: all vuln fix demo clean
+.PHONY: all vuln fix demo check clean
 
 all: vuln fix
 
@@ -27,6 +27,19 @@ demo: all
 	@echo "── Détection Valgrind ──"
 	valgrind --tool=memcheck --error-exitcode=1 ./exoG_vuln 2>&1 | \
 	    grep -iE "(uninitialised|invalid read|ERROR SUMMARY)" | head -10 || true
+
+check: all
+	@echo "=== Vérification automatique (exoG) ==="
+	@echo "─ Test 1 : Valgrind doit détecter la lecture de mémoire non initialisée ─"
+	@valgrind --tool=memcheck --error-exitcode=1 ./exoG_vuln 2>&1 | \
+		grep -qi "uninitialised\|Conditional jump\|Invalid read" \
+		&& echo "[PASS] Valgrind a détecté la mémoire non initialisée." \
+		|| (echo "[FAIL] Valgrind n'a pas signalé d'erreur." && exit 1)
+	@echo "─ Test 2 : version corrigée doit passer Valgrind sans erreur ─"
+	@valgrind --tool=memcheck --error-exitcode=1 ./exoG_fix 2>/dev/null \
+		&& echo "[PASS] Version corrigée : Valgrind OK." \
+		|| (echo "[FAIL] Version corrigée : Valgrind signale des erreurs." && exit 1)
+	@echo "[✓] Tous les tests passent."
 
 clean:
 	rm -f exoG_vuln exoG_fix

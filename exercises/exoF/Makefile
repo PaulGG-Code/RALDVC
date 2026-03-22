@@ -3,7 +3,7 @@ BASE = -O0 -g -Wall -Wextra -Wpedantic
 VULN = $(BASE) -w           # masquer l'avertissement pour la démo
 FIX  = $(BASE) -Wformat -Wformat-security -Werror=format-security
 
-.PHONY: all vuln fix demo clean
+.PHONY: all vuln fix demo check clean
 
 all: vuln fix
 
@@ -32,6 +32,19 @@ demo: all
 	@echo "── Tentative de compiler vuln avec -Werror=format-security ──"
 	$(CC) -O0 -g -Wformat -Wformat-security -Werror=format-security \
 	    exoF_vuln.c -o /dev/null 2>&1 || true
+
+check: all
+	@echo "=== Vérification automatique (exoF) ==="
+	@echo "─ Test 1 : compiler le code vulnérable avec -Werror=format-security doit échouer ─"
+	@$(CC) -O0 -g -Wformat -Wformat-security -Werror=format-security \
+		exoF_vuln.c -o /dev/null 2>/dev/null \
+		&& (echo "[FAIL] La compilation a réussi — code vulnérable non détecté." && exit 1) \
+		|| echo "[PASS] Compilation refusée avec -Werror=format-security."
+	@echo "─ Test 2 : version corrigée doit se terminer sans erreur ─"
+	@./exoF_fix "%x %x %x" \
+		&& echo "[PASS] Version corrigée : terminaison propre." \
+		|| (echo "[FAIL] Version corrigée : code de sortie non-nul." && exit 1)
+	@echo "[✓] Tous les tests passent."
 
 clean:
 	rm -f exoF_vuln exoF_fix

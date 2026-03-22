@@ -4,7 +4,7 @@ VULN = $(BASE) -w
 FIX  = $(BASE) -fsanitize=address
 ASAN = $(BASE) -w -fsanitize=address
 
-.PHONY: all vuln fix asan demo clean
+.PHONY: all vuln fix asan demo check clean
 
 all: vuln fix asan
 
@@ -30,6 +30,18 @@ demo: all
 	@echo ""
 	@echo "── Version corrigée ──"
 	./exoE_fix
+
+check: all
+	@echo "=== Vérification automatique (exoE) ==="
+	@echo "─ Test 1 : ASan doit détecter l'use-after-free ─"
+	@./exoE_vuln_asan 2>&1 | grep -qi "heap-use-after-free\|AddressSanitizer" \
+		&& echo "[PASS] ASan a détecté l'use-after-free." \
+		|| (echo "[FAIL] ASan n'a pas signalé d'erreur." && exit 1)
+	@echo "─ Test 2 : version corrigée doit se terminer sans erreur ─"
+	@./exoE_fix \
+		&& echo "[PASS] Version corrigée : terminaison propre." \
+		|| (echo "[FAIL] Version corrigée : code de sortie non-nul." && exit 1)
+	@echo "[✓] Tous les tests passent."
 
 clean:
 	rm -f exoE_vuln exoE_fix exoE_vuln_asan

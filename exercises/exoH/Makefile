@@ -9,7 +9,7 @@ SHORT_M = hello
 LONG_U  = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 LONG_M  = BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
-.PHONY: all vuln fix asan demo clean
+.PHONY: all vuln fix asan demo check clean
 
 all: vuln fix asan
 
@@ -38,6 +38,18 @@ demo: all
 	@echo ""
 	@echo "── Version corrigée — cas long (troncature signalée) ──"
 	./exoH_fix "$(LONG_U)" "$(LONG_M)" || true
+
+check: all
+	@echo "=== Vérification automatique (exoH) ==="
+	@echo "─ Test 1 : ASan doit détecter le débordement (API non sécurisée) ─"
+	@./exoH_vuln_asan "$(LONG_U)" "$(LONG_M)" 2>&1 | grep -qi "AddressSanitizer" \
+		&& echo "[PASS] ASan a détecté le débordement." \
+		|| (echo "[FAIL] ASan n'a pas signalé d'erreur." && exit 1)
+	@echo "─ Test 2 : version corrigée doit se terminer sans erreur ASan ─"
+	@./exoH_fix "$(LONG_U)" "$(LONG_M)" 2>&1 | grep -qiv "AddressSanitizer\|SIGABRT" \
+		&& echo "[PASS] Version corrigée : pas d'erreur ASan (troncature contrôlée)." \
+		|| (echo "[FAIL] Version corrigée déclenche ASan." && exit 1)
+	@echo "[✓] Tous les tests passent."
 
 clean:
 	rm -f exoH_vuln exoH_fix exoH_vuln_asan
