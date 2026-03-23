@@ -1,20 +1,15 @@
 CC      = gcc
 BASE    = -O0 -g -Wall -Wextra -Wpedantic
 VULN    = $(BASE) -fno-stack-protector -no-pie -w
-FIX     = $(BASE) -fstack-protector-all -fsanitize=address,undefined
 ASAN    = $(BASE) -fno-stack-protector -no-pie -fsanitize=address,undefined -w
 
-.PHONY: all vuln fix asan demo check clean
+.PHONY: all vuln asan demo clean
 
-all: vuln fix asan
+all: vuln asan
 
 vuln: exoA_vuln.c
 	$(CC) $(VULN) $< -o exoA_vuln
 	@echo "[+] exoA_vuln built (no mitigations)"
-
-fix: exoA_fix.c
-	$(CC) $(FIX) $< -o exoA_fix
-	@echo "[+] exoA_fix built (ASan + stack protector)"
 
 asan: exoA_vuln.c
 	$(CC) $(ASAN) $< -o exoA_vuln_asan
@@ -30,21 +25,6 @@ demo: all
 	@echo ""
 	@echo "── Étape 3 : détection ASan ──"
 	./exoA_vuln_asan AAAAAAAAAAAAAAAAAAAA 2>&1 | head -20 || true
-	@echo ""
-	@echo "── Étape 4 : version corrigée (même entrée) ──"
-	./exoA_fix AAAAAAAAAAAAAAAAAAAA
-
-check: all
-	@echo "=== Vérification automatique (exoA) ==="
-	@echo "─ Test 1 : ASan doit détecter le débordement de tampon ─"
-	@./exoA_vuln_asan AAAAAAAAAAAAAAAAAAAA 2>&1 | grep -qi "AddressSanitizer" \
-		&& echo "[PASS] ASan a détecté le débordement." \
-		|| (echo "[FAIL] ASan n'a pas signalé d'erreur." && exit 1)
-	@echo "─ Test 2 : version corrigée doit se terminer sans erreur ─"
-	@./exoA_fix AAAAAAAAAAAAAAAAAAAA \
-		&& echo "[PASS] Version corrigée : terminaison propre." \
-		|| (echo "[FAIL] Version corrigée : code de sortie non-nul." && exit 1)
-	@echo "[✓] Tous les tests passent."
 
 clean:
-	rm -f exoA_vuln exoA_fix exoA_vuln_asan
+	rm -f exoA_vuln exoA_vuln_asan exoA_fix

@@ -72,45 +72,13 @@ WRITE of size 32 at ...
 0x... is located 0 bytes after 1-byte region [...]
 ```
 
-## Correction
+## À vous de jouer
 
-```c
-/* FIX 1 : size_t au lieu de uint32_t pour les calculs de taille */
-size_t n = (size_t)1 << 30;
+Créez `exoD_fix.c` en corrigeant la vulnérabilité dans `exoD_vuln.c`.
 
-/* FIX 2 : __builtin_mul_overflow détecte l'overflow avant qu'il se produise */
-size_t total;
-if (__builtin_mul_overflow(n, (size_t)8, &total)) {
-    fprintf(stderr, "Overflow — allocation refusée.\n");
-    return 1;
-}
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- Le programme détecte et rejette l'allocation invalide avant qu'elle ne se produise
+- ASan ne signale aucune erreur de heap-buffer-overflow
 
-/* FIX 3 : borne supérieure applicative */
-if (total > MAX_ALLOC) { return 1; }
-```
-
-**Pourquoi `size_t` et pas `uint64_t` ?**
-`size_t` est le type garanti par la norme C pour représenter toute taille d'objet allouable. Sur x86-64, il est 64 bits, ce qui rend l'overflow dans ce calcul impossible en pratique.
-
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic -fsanitize=undefined \
-    exoD_fix.c -o exoD_fix
-./exoD_fix
-# → Overflow détecté dans n * 8 — allocation refusée.
-```
-
-Tester plusieurs valeurs frontières :
-```bash
-# n = 1 → total = 8 → OK
-# n = 2^30 → overflow → refusé
-# n = MAX_ALLOC/8 + 1 → total > MAX_ALLOC → refusé
-```
-
-## Points clés
-
-- Les overflows entiers en C sont silencieux — il n'y a pas d'exception
-- Toujours utiliser `size_t` pour les calculs de taille mémoire
-- `__builtin_mul_overflow` (GCC/Clang) est le moyen le plus lisible de vérifier
-- Les multiplications `count * sizeof(T)` pour `malloc` sont un vecteur classique de CVE (OpenSSH, Samba, etc.)
+**Indice :** pensez au type utilisé pour les calculs de taille, et à la façon de détecter l'overflow avant d'appeler `malloc`.

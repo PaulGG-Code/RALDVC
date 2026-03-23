@@ -56,31 +56,11 @@ gcc -O0 -g -Wformat -Wformat-security -Werror=format-security exoF_vuln.c -o exo
 ```
 `-Wformat-security` transforme ce pattern en avertissement ; `-Werror=format-security` le transforme en erreur qui interrompt la compilation.
 
-## Correction
+## À vous de jouer
 
-```c
-printf("%s", argv[1]);   /* SAFE : "%s" est un littéral de format */
-```
+Créez `exoF_fix.c` en corrigeant la vulnérabilité dans `exoF_vuln.c`.
 
-**Changement minimal : `printf(x)` → `printf("%s", x)`.**
-
-## Vérification
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic \
-    -Wformat -Wformat-security -Werror=format-security \
-    exoF_fix.c -o exoF_fix
-
-./exoF_fix "hello"
-./exoF_fix "%x %x %x %x"
-# → affiche "%x %x %x %x" littéralement, sans interprétation
-```
-
-Recompiler `exoF_vuln.c` avec `-Werror=format-security` pour vérifier que le compilateur aurait pu bloquer ce bug dès la compilation.
-
-## Points clés
-
-- La chaîne de format de `printf` doit **toujours** être un littéral sous contrôle du développeur
-- `%n` permet une écriture mémoire arbitraire — c'est la primitive d'exploitation la plus puissante des vulnérabilités de format string
-- `-Wformat-security` dans le Makefile de tout projet C est une mesure préventive à coût nul
-- Les linters (clang-tidy, cppcheck) détectent ce pattern statiquement
+**Critères de réussite :**
+- Compile sans erreur avec `-Wformat -Wformat-security -Werror=format-security`
+- `./exoF_fix "%x %x %x %x"` affiche `%x %x %x %x` littéralement, sans interprétation
+- Le comportement nominal est préservé (`./exoF_fix "hello"` affiche le message correctement)

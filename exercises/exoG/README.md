@@ -63,35 +63,11 @@ Valgrind signale (noter la casse minuscule dans les messages réels) :
 ```
 Ces deux messages pointent vers la lecture du champ `token` non initialisé dans `printf`.
 
-## Correction
+## À vous de jouer
 
-```c
-/* Initialisation à zéro de toute la struct en une ligne */
-record_t r = {0};
-r.id = 1;
-```
+Créez `exoG_fix.c` en corrigeant la vulnérabilité dans `exoG_vuln.c`.
 
-**Pourquoi `= {0}` initialise-t-il tous les membres ?**
-Norme C99 §6.7.8 : si un initialiseur est fourni pour le premier membre, tous les membres restants sont initialisés implicitement à leur zéro (0, NULL, 0.0, ou équivalent selon le type).
-
-`= {0}` est donc équivalent à `memset(&r, 0, sizeof(r))` mais exprimé au niveau sémantique, sans magic numbers.
-
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic \
-    -Wuninitialized -Wmaybe-uninitialized \
-    exoG_fix.c -o exoG_fix
-
-./exoG_fix
-# → r.token hex : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  (tous zéros)
-```
-
-Comparer plusieurs exécutions — la sortie doit être identique et prévisible.
-
-## Points clés
-
-- En C, les variables locales ne sont **pas** initialisées à zéro par défaut (contrairement à Java ou Python)
-- Un token, un mot de passe ou une clé non initialisé peut être accidentellement exposé dans des logs ou des réponses réseau
-- `= {0}` est la façon la plus concise et correcte d'initialiser n'importe quelle struct/tableau à zéro
-- `calloc()` (au lieu de `malloc()`) retourne de la mémoire zeroed — utile pour les allocations sur le tas
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic -Wuninitialized`
+- Valgrind ne signale aucun `uninitialised value` ni `Invalid read`
+- La sortie de `r.token` est déterministe et identique entre toutes les exécutions

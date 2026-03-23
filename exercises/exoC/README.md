@@ -48,35 +48,11 @@ ERROR: AddressSanitizer: stack-buffer-overflow
 WRITE of size 1 at 0x... shadow bytes around the buggy address
 ```
 
-## Correction
+## À vous de jouer
 
-```c
-/* Strict < au lieu de <= */
-for (size_t i = 0; i < sizeof(buf); i++) {
-    buf[i] = 'A';
-}
-```
+Créez `exoC_fix.c` en corrigeant la vulnérabilité dans `exoC_vuln.c`.
 
-**Règle invariante :** pour un tableau `T[N]`, les indices valides sont `0..N-1`. La condition de boucle doit être `i < N` (jamais `i <= N`).
-
-Utiliser `sizeof(buf)` plutôt qu'un littéral `8` est une bonne pratique : si la taille du buffer change, la condition reste automatiquement correcte.
-
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic \
-    -fsanitize=address,undefined \
-    exoC_fix.c -o exoC_fix
-
-./exoC_fix
-# → done — 8 octets écrits, tous dans les limites.
-```
-
-Aucune alerte sanitizer, sortie propre.
-
-## Points clés
-
-- L'erreur `<=` vs `<` est l'un des bugs les plus fréquents en C
-- Un comportement non défini silencieux est souvent plus dangereux qu'un crash : il peut corrompre une variable adjacente sans signal visible
-- Les sanitizers (ASan) détectent ce bug à l'exécution ; les analyseurs statiques (cppcheck, clang-tidy) peuvent le détecter sans exécuter le code
-- Sur le tas, un off-by-one peut corrompre les métadonnées du chunk glibc suivant
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- ASan ne signale aucune erreur
+- Le programme écrit exactement 8 octets, tous dans les limites du tableau

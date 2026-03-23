@@ -92,35 +92,11 @@ gdb -q ./exoA_vuln
 (gdb) quit
 ```
 
-## Correction
+## À vous de jouer
 
-```c
-/* strncpy borné + null-termination explicite */
-strncpy(s.user, argv[1], sizeof(s.user) - 1);
-s.user[sizeof(s.user) - 1] = '\0';
-```
+Créez `exoA_fix.c` en corrigeant la vulnérabilité dans `exoA_vuln.c`.
 
-**Pourquoi `sizeof(s.user) - 1` et pas juste `sizeof(s.user)` ?**
-`strncpy(dst, src, n)` copie *exactement* n octets : si `strlen(src) >= n`, il n'ajoute **pas** de `'\0'`. Réserver le dernier octet et l'écrire explicitement garantit que la chaîne est toujours terminée.
-
-## Vérification défensive post-correction
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic \
-    -fsanitize=address,undefined \
-    -fstack-protector-all \
-    exoA_fix.c -o exoA_fix
-
-./exoA_fix AAAAAAAAAAAAAAAAAAAA
-# → USER — rôle intact, overflow bloqué.
-```
-
-Le binaire corrigé ne produit ni alerte sanitizer ni bascule logique.
-
-## Points clés
-
-- `strcpy` est dangereuse car elle n'a aucun argument de taille
-- Un overflow de 1 octet suffit à corrompre la variable adjacente
-- La disposition mémoire des structs est déterministe (sans padding excessif avec `-O0`)
-- `strncpy` + null-termination explicite est le patron minimal de correction
-- Pour du code production, préférer `strlcpy` (BSD/glibc ≥ 2.38) ou `snprintf`
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- ASan ne signale aucune erreur avec l'entrée de 20 caractères
+- Le comportement nominal est préservé (`./exoA_fix Paul` affiche `USER`)

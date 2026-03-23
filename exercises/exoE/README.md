@@ -92,35 +92,12 @@ valgrind --tool=memcheck ./exoE_vuln
 ```
 Valgrind signale `Invalid read of size 4` et montre la pile d'appel du `free` et de l'accès invalide.
 
-## Correction
+## À vous de jouer
 
-```c
-free(p);
-p = NULL;   /* invalider immédiatement */
+Créez `exoE_fix.c` en corrigeant la vulnérabilité dans `exoE_vuln.c`.
 
-/* Plus tard : */
-if (p != NULL) {
-    /* seul contexte où on peut déréférencer */
-}
-```
-
-**Pourquoi `p = NULL` après `free` ?**
-- `free(NULL)` est un no-op garanti par la norme C → double-free accidentel inoffensif
-- Tout déréférencement ultérieur de `p` provoque un SIGSEGV immédiat et identifiable
-- Les sanitizers et Valgrind confirment que le code corrigé est propre
-
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic -fsanitize=address \
-    exoE_fix.c -o exoE_fix
-./exoE_fix
-# → p est NULL — accès bloqué, pas d'use-after-free.
-```
-
-## Points clés
-
-- `free()` ne met pas le pointeur à NULL — c'est au programmeur de le faire
-- La mémoire libérée peut être réallouée à tout moment pour un autre objet
-- UAF est l'une des classes de vulnérabilités les plus exploitées (navigateurs, noyaux Linux)
-- Macro recommandée : `#define safe_free(p) do { free(p); (p) = NULL; } while(0)`
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- ASan ne signale aucune erreur `heap-use-after-free`
+- Valgrind ne signale aucun `Invalid read`
+- Le programme se termine proprement sans accéder à de la mémoire libérée

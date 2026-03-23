@@ -49,35 +49,12 @@ gcc -O0 -g -fsanitize=address exoB_vuln.c -o exoB_vuln_asan
 ```
 ASan signale `stack-buffer-overflow` et pointe exactement le `strcat` responsable.
 
-## Correction
+## À vous de jouer
 
-```c
-/* Un seul appel borné remplace trois strcat */
-int written = snprintf(out, sizeof(out), "User: %s | Msg: %s", argv[1], argv[2]);
-if ((size_t)written >= sizeof(out)) {
-    /* message tronqué — décider : rejeter ou accepter la troncature */
-}
-```
+Créez `exoB_fix.c` en corrigeant la vulnérabilité dans `exoB_vuln.c`.
 
-**Pourquoi `snprintf` et pas `strncat` en chaîne ?**
-`strncat(dst, src, n)` ajoute au plus `n` octets de `src`, mais `n` est *relatif à src*, pas à la capacité restante de `dst`. Il faudrait calculer la capacité restante à chaque appel, ce qui est fragile. `snprintf` construit tout en une seule opération avec une borne absolue.
-
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic -fsanitize=address,undefined \
-    exoB_fix.c -o exoB_fix
-
-# Cas long : troncature signalée proprement, pas de dépassement
-./exoB_fix AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-
-# Cas court : sortie normale
-./exoB_fix Alice Hi
-```
-
-## Points clés
-
-- La composition de plusieurs API sûres individuellement peut être globalement non-sûre
-- `strcat` ne connaît pas la taille de la destination — elle lit jusqu'au `'\0'` initial
-- Toujours raisonner sur la **taille totale finale**, pas sur chaque copie isolément
-- `snprintf` est l'outil de construction de chaînes le plus sûr en C standard
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- ASan ne signale aucune erreur sur les entrées longues
+- Le cas nominal (`Alice Hi`) produit toujours la même sortie
+- Les entrées qui dépassent la capacité du buffer sont gérées proprement (troncature ou rejet)

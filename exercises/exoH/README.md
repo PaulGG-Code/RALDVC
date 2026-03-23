@@ -66,44 +66,14 @@ gcc -O0 -g -fsanitize=address exoH_vuln.c -o exoH_vuln_asan
 ```
 ASan pointe précisément le `strcat` ou le `strcpy` responsable.
 
-## Correction robuste
+## À vous de jouer
 
-```c
-/* Signature corrigée : dst_sz est obligatoire */
-int make_msg(char *dst, size_t dst_sz, const char *user, const char *msg) {
-    int ret = snprintf(dst, dst_sz, "%s: %s", user, msg);
-    if (ret < 0)                return -1;   /* erreur */
-    if ((size_t)ret >= dst_sz)  return 1;    /* tronqué */
-    return 0;                                /* succès */
-}
-```
+Créez `exoH_fix.c` en corrigeant la vulnérabilité dans `exoH_vuln.c`.
 
-**Pourquoi vérifier le retour de `snprintf` ?**
-- `ret < 0` : erreur d'encodage (rare mais possible avec formats complexes)
-- `ret >= dst_sz` : la chaîne aurait été plus longue que dst_sz — troncature
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- ASan ne signale aucune erreur sur les entrées longues
+- Le cas nominal (`ALICE hello`) produit la même sortie
+- Les entrées qui dépassent la capacité sont gérées proprement (troncature signalée ou rejet)
 
-Ignorer le retour de `snprintf` est une erreur courante : le caller doit savoir si le message a été tronqué pour décider de le rejeter ou de l'accepter.
-
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic -fsanitize=address,undefined \
-    exoH_fix.c -o exoH_fix
-
-# Cas court : succès
-./exoH_fix ALICE "hello"
-
-# Cas long : troncature signalée, pas d'overflow
-./exoH_fix AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-
-# Tests unitaires supplémentaires
-./exoH_fix "" ""                     # user et message vides
-./exoH_fix "$(python3 -c 'print("A"*200)')" "msg"  # user très long
-```
-
-## Points clés
-
-- Une fonction qui écrit dans un buffer doit **toujours** recevoir la taille de ce buffer comme paramètre
-- Migrer `strcpy/strcat/sprintf` → `snprintf` est la refactorisation la plus simple et la plus sûre
-- La valeur de retour de `snprintf` est une information de sécurité à ne pas ignorer
-- En revue de code : tout appel à `strcpy`, `strcat`, `sprintf`, `gets` doit déclencher une alerte
+**Indice :** une fonction qui écrit dans un buffer devrait recevoir la taille de ce buffer comme paramètre.

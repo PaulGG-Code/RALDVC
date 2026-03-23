@@ -97,46 +97,14 @@ Sortie attendue :
 ==...==ERROR: AddressSanitizer: attempting double-free on 0x...
 ```
 
-## Correction
+## À vous de jouer
 
-```c
-/* Prend Node ** pour invalider le pointeur chez l'appelant */
-void node_destroy(Node **n) {
-    if (!n || !*n) return;   /* no-op si déjà NULL */
-    free((*n)->data);
-    (*n)->data = NULL;
-    free(*n);
-    *n = NULL;               /* invalider chez l'appelant */
-}
-```
+Créez `exoI_fix.c` en corrigeant la vulnérabilité dans `exoI_vuln.c`.
 
-**Pourquoi `Node **` ?**
-- `free(NULL)` est garanti sans effet par la norme C11 (§7.22.3.3)
-- En passant `&n`, `node_destroy` peut écrire `*n = NULL` après la libération
-- Le deuxième appel à `node_destroy(&n)` voit `*n == NULL` → retour immédiat
-- Le double-free devient structurellement impossible
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- ASan ne signale aucune erreur `double-free`
+- Le programme se termine proprement sans SIGABRT
+- La mémoire est libérée exactement une fois, même sur le chemin d'erreur
 
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic -fsanitize=address \
-    exoI_fix.c -o exoI_fix
-./exoI_fix
-# → Nettoyage sûr : n = 0x0 (NULL, aucune double-libération)
-```
-
-Vérification automatique :
-```bash
-make check
-# [PASS] ASan a détecté la double-libération.
-# [PASS] Version corrigée : terminaison propre.
-# [✓] Tous les tests passent.
-```
-
-## Points clés
-
-- `free()` ne modifie pas le pointeur — la responsabilité de le mettre à NULL incombe au programmeur
-- Un double-free est souvent silencieux sans outils (les métadonnées de l'allocateur peuvent absorber la corruption)
-- ASan montre les **deux sites** de libération — information critique pour diagnostiquer l'origine
-- Le pattern `Node **` (ou `free(p); p = NULL;`) est la défense canonique
-- En exploitation : le double-free tcache permet de contrôler les pointeurs de la freelist → allocation arbitraire de mémoire
+**Indice :** comment rendre le deuxième appel à `node_destroy` structurellement inoffensif, quelle que soit la séquence d'appel ?

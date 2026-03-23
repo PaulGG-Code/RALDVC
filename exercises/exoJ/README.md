@@ -82,55 +82,13 @@ strace -e execve ./exoJ_vuln "/etc/hostname; id" 2>&1 | grep execve
 ```
 On voit `/bin/sh` invoqué avec la chaîne entière — le shell interprète tout.
 
-## Correction
+## À vous de jouer
 
-```c
-/* Pas de shell — fork + execvp directement */
-void count_words(const char *filename) {
-    pid_t pid = fork();
-    if (pid == 0) {
-        execlp("wc", "wc", "-w", "--", filename, (char *)NULL);
-        _exit(1);
-    }
-    waitpid(pid, NULL, 0);
-}
-```
+Créez `exoJ_fix.c` en corrigeant la vulnérabilité dans `exoJ_vuln.c`.
 
-**Pourquoi `execvp` bloque l'injection :**
-- `execvp` lance directement `/usr/bin/wc` — pas de shell
-- `filename` est passé comme un argument opaque dans le tableau `argv`
-- `wc` reçoit la chaîne `"notes.txt; echo INJECTED"` comme **nom de fichier littéral**
-- Le `;` n'est jamais interprété comme séparateur de commandes
+**Critères de réussite :**
+- Compile sans avertissement avec `-Wall -Wextra -Wpedantic`
+- `./exoJ_fix "/etc/hostname; echo INJECTED_CMD"` n'exécute **pas** `echo INJECTED_CMD`
+- Le cas nominal (`./exoJ_fix /etc/hostname`) fonctionne toujours correctement
 
-**`--` : fin des options**
-Le `--` protège contre les noms de fichiers commençant par `-` (ex : `-rf`) qui seraient autrement interprétés comme des options par `wc`.
-
-## Vérification défensive
-
-```bash
-gcc -O0 -g -Wall -Wextra -Wpedantic exoJ_fix.c -o exoJ_fix
-./exoJ_fix "/etc/hostname; echo INJECTED_CMD"
-```
-Sortie attendue :
-```
-=== Comptage de mots (version sûre) ===
-wc: '/etc/hostname; echo INJECTED_CMD': No such file or directory
-[-] wc a échoué (code 1) — fichier introuvable ?
-```
-`echo INJECTED_CMD` n'apparaît pas — l'injection est bloquée.
-
-Vérification automatique :
-```bash
-make check
-# [PASS] Injection démontrée dans la version vulnérable.
-# [PASS] Injection bloquée dans la version corrigée.
-# [✓] Tous les tests passent.
-```
-
-## Points clés
-
-- `system()` passe toujours par un shell (`/bin/sh -c`) — tout métacaractère dans l'argument est interprété
-- La bonne règle : **ne jamais construire une commande shell avec des données extérieures**
-- `execvp()` + `fork()` : pas de shell, pas d'interprétation, pas d'injection
-- Alternative : validation stricte de l'entrée (liste blanche de caractères autorisés) — mais plus fragile que `execvp`
-- CWE-78 est systématiquement dans l'OWASP Top 10 (A3 — Injection)
+**Indice :** comment exécuter `wc` sans passer par un shell intermédiaire ?
