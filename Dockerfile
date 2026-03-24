@@ -24,15 +24,24 @@ RUN apt-get update && apt-get install -y \
     git \
     python3-dev \
     libc6-dbg \
+    cppcheck \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pwntools
-RUN pip3 install pwntools
+# Install pwntools and semgrep and flowfinder
+RUN pip3 install pwntools semgrep flowfinder
 
 # Install pwndbg for enhanced GDB heap/stack visualization
 # Adds: heap, vis_heap_chunks, telescope, context commands in GDB
 RUN git clone --depth=1 https://github.com/pwndbg/pwndbg /opt/pwndbg \
     && cd /opt/pwndbg && ./setup.sh --quiet 2>&1 | tail -5
+
+# Install syft (SBOM generator)
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+    | sh -s -- -b /usr/local/bin
+
+# Install grype (vulnerability scanner for SBOMs and images)
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
+    | sh -s -- -b /usr/local/bin
 
 # GDB config: Intel syntax, no pagination, pretty printing
 RUN echo 'set disassembly-flavor intel' >> /root/.gdbinit && \
@@ -42,24 +51,27 @@ RUN echo 'set disassembly-flavor intel' >> /root/.gdbinit && \
 # Create lab directory
 WORKDIR /lab
 
-# Copy vulnerabilities and exercises into the image
-COPY vulnerabilities/ /lab/vulnerabilities/
-COPY exercises/ /lab/exercises/
+# Day 1 – vulnerability demos and exercises
+COPY day1/vulnerabilities/ /lab/day1/vulnerabilities/
+COPY day1/exercises/       /lab/day1/exercises/
+
+# Day 2 – real-world target (wuftpd) for static analysis
+COPY day2/wuftpd/          /lab/day2/wuftpd/
 
 # Disable ASLR (also set via sysctl in docker-compose, but belt-and-suspenders)
 RUN echo 0 > /proc/sys/kernel/randomize_va_space 2>/dev/null || true
 
-# Build all vulnerability modules at image build time
-RUN for dir in /lab/vulnerabilities/*/; do \
+# Build all day1 vulnerability modules at image build time
+RUN for dir in /lab/day1/vulnerabilities/*/; do \
         echo "Building $dir ..."; \
         make -C "$dir" all 2>&1 || true; \
     done
 
-# Build all exercises at image build time
-RUN make -C /lab/exercises all 2>&1 || true
+# Build all day1 exercises at image build time
+RUN make -C /lab/day1/exercises all 2>&1 || true
 
 # Add a helpful banner on shell start
-RUN echo 'cat /lab/vulnerabilities/WELCOME.txt 2>/dev/null || true' >> /root/.bashrc
+RUN echo 'cat /lab/day1/vulnerabilities/WELCOME.txt 2>/dev/null || true' >> /root/.bashrc
 
 # Entrypoint: tries to disable ASLR at container start, continues gracefully if
 # the host kernel denies the write (Mac/Windows Docker Desktop).

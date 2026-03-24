@@ -11,7 +11,9 @@ services:
     tty: true
     # Mount vulnerabilities directory so edits on host are reflected in container
     volumes:
-      - ./vulnerabilities:/lab/vulnerabilities
+      - ./day1/vulnerabilities:/lab/day1/vulnerabilities
+      - ./day1/exercises:/lab/day1/exercises
+      - ./day2/wuftpd:/lab/day2/wuftpd
     # Disable seccomp so ptrace/gdb works
     security_opt:
       - seccomp:unconfined
