@@ -58,6 +58,26 @@ COPY day1/exercises/       /lab/day1/exercises/
 # Day 2 – real-world target (wuftpd) for static analysis
 COPY day2/wuftpd/          /lab/day2/wuftpd/
 
+# Encoding preprocessing for wuftpd (required before running flawfinder/semgrep).
+# wuftpd is a 1990s codebase: several .c/.h files use Latin-1/ISO-8859-1 encoding
+# (accented author names in copyright headers). Python 3 tools crash on non-UTF-8
+# bytes. We produce a clean UTF-8 copy at /lab/day2/wuftpd_utf8/ at build time.
+#
+# Strategy:
+#   1. iconv -f ISO-8859-1 -t UTF-8  — handles the Latin-1 files
+#   2. cp fallback                    — keeps files that are already clean ASCII/UTF-8
+#      or are binary (iconv errors on those too)
+#   3. Remove getpwnam.c              — contains multi-byte sequences iconv cannot
+#      cleanly convert even from ISO-8859-1; it is only stdlib wrappers and is not
+#      a meaningful analysis loss.
+RUN mkdir -p /lab/day2/wuftpd_utf8 && \
+    find /lab/day2/wuftpd/src -name "*.c" -o -name "*.h" | while read f; do \
+        dest="/lab/day2/wuftpd_utf8/$(basename "$f")"; \
+        iconv -f ISO-8859-1 -t UTF-8 "$f" > "$dest" 2>/dev/null || cp "$f" "$dest"; \
+    done && \
+    rm -f /lab/day2/wuftpd_utf8/getpwnam.c && \
+    echo "Preprocessed $(ls /lab/day2/wuftpd_utf8/ | wc -l) files into /lab/day2/wuftpd_utf8/"
+
 # Disable ASLR (also set via sysctl in docker-compose, but belt-and-suspenders)
 RUN echo 0 > /proc/sys/kernel/randomize_va_space 2>/dev/null || true
 
