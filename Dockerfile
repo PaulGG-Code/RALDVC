@@ -27,8 +27,8 @@ RUN apt-get update && apt-get install -y \
     cppcheck \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pwntools and semgrep and flowfinder
-RUN pip3 install pwntools semgrep flowfinder
+# Install pwntools, semgrep, and flawfinder (C/C++ security flaw scanner)
+RUN pip3 install pwntools semgrep flawfinder
 
 # Install pwndbg for enhanced GDB heap/stack visualization
 # Adds: heap, vis_heap_chunks, telescope, context commands in GDB
